@@ -2,11 +2,13 @@ import { createSlice, type EntityState, type PayloadAction } from '@reduxjs/tool
 import { keyFromCertificate, parseCertificate, parseCertificationRequest } from '@quiet/identity'
 import { StoreKeys } from '../store.keys'
 import { certificatesAdapter } from './users.adapter'
-import { SendCsrsResponse, type SendCertificatesResponse, UserProfileData } from '@quiet/types'
+import { SendCsrsResponse, type SendCertificatesResponse, UserProfile } from '@quiet/types'
 
 export class UsersState {
   public certificates: EntityState<any> = certificatesAdapter.getInitialState()
   public csrs: EntityState<any> = certificatesAdapter.getInitialState()
+  // Mapping of pubKey to UserProfile
+  public userProfiles: Record<string, UserProfile> = {}
 }
 
 export const usersSlice = createSlice({
@@ -46,7 +48,13 @@ export const usersSlice = createSlice({
         keyFromCertificate(parseCertificate(action.payload.certificate))
       )
     },
-    saveUserProfile: (state, _action: PayloadAction<UserProfileData>) => state,
+    saveUserProfile: (state, _action: PayloadAction<{ photo?: File }>) => state,
+    setUserProfiles: (state, action: PayloadAction<UserProfile[]>) => {
+      for (const userProfile of action.payload) {
+        state.userProfiles[userProfile.pubKey] = userProfile
+      }
+      return state
+    },
   },
 })
 

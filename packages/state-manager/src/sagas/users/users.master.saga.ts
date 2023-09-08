@@ -5,7 +5,5 @@ import { usersActions } from './users.slice'
 import { saveUserProfileSaga } from './userProfile/saveUserProfile.saga'
 
 export function* usersMasterSaga(socket: Socket): Generator {
-  yield all([
-    takeEvery(usersActions.saveUserProfile.type, saveUserProfileSaga, socket),
-  ])
+  yield all([takeEvery(usersActions.saveUserProfile.type, saveUserProfileSaga, socket)])
 }

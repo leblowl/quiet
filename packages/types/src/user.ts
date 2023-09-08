@@ -12,7 +12,7 @@ export interface User extends UserData {
 }
 
 export interface UserProfileData {
-  photo: string
+  photo: string // base64 encoded image
 }
 
 export interface UserProfile {

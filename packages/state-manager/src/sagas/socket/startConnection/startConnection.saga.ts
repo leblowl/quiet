@@ -44,6 +44,7 @@ import {
   type SendOwnerCertificatePayload,
   CommunityMetadata,
   SendCsrsResponse,
+  UserProfilesLoadedEvent,
 } from '@quiet/types'
 
 const log = logger('socket')
@@ -94,6 +95,7 @@ export function subscribe(socket: Socket) {
     | ReturnType<typeof connectionActions.setTorInitialized>
     | ReturnType<typeof communitiesActions.saveCommunityMetadata>
     | ReturnType<typeof communitiesActions.sendCommunityMetadata>
+    | ReturnType<typeof usersActions.setUserProfiles>
   >(emit => {
     // UPDATE FOR APP
     socket.on(SocketActionTypes.TOR_INITIALIZED, () => {
@@ -270,6 +272,14 @@ export function subscribe(socket: Socket) {
         })
       )
     })
+
+    // User Profile
+
+    socket.on(SocketActionTypes.LOADED_USER_PROFILES, (payload: UserProfilesLoadedEvent) => {
+      console.log('Loaded user profiles, saving to store')
+      emit(usersActions.setUserProfiles(payload.profiles))
+    })
+
     return () => undefined
   })
 }

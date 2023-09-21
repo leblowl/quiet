@@ -22,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ipld/dag-cbor": "^9.0.5",
     "@quiet/common": "^2.0.0-alpha.1",
     "@quiet/logger": "^1.7.0-alpha.1",
     "@quiet/types": "^2.0.0-alpha.1",

@@ -17,6 +17,7 @@ import {
   DeleteFilesFromChannelSocketPayload,
   SaveCSRPayload,
   CommunityMetadata,
+  UserProfile,
 } from '@quiet/types'
 import cors, { CorsOptions } from 'cors'
 import EventEmitter from 'events'
@@ -155,6 +156,9 @@ export class SocketService extends EventEmitter implements OnModuleInit {
       })
       socket.on(SocketActionTypes.SEND_COMMUNITY_METADATA, (payload: CommunityMetadata) => {
         this.emit(SocketActionTypes.SEND_COMMUNITY_METADATA, payload)
+      })
+      socket.on(SocketActionTypes.SAVE_USER_PROFILE, (profile: UserProfile) => {
+        this.emit(SocketActionTypes.SAVE_USER_PROFILE, profile)
       })
     })
   }

@@ -16,6 +16,7 @@ import { filesMasterSaga } from '../../files/files.master.saga'
 import { messagesActions } from '../../messages/messages.slice'
 import { publicChannelsMasterSaga } from '../../publicChannels/publicChannels.master.saga'
 import { publicChannelsActions } from '../../publicChannels/publicChannels.slice'
+import { usersMasterSaga } from '../../users/users.master.saga'
 import { usersActions } from '../../users/users.slice'
 import { filesActions } from '../../files/files.slice'
 import { networkActions } from '../../network/network.slice'
@@ -288,6 +289,7 @@ export function* useIO(socket: Socket): Generator {
     fork(filesMasterSaga, socket),
     fork(identityMasterSaga, socket),
     fork(communitiesMasterSaga, socket),
+    fork(usersMasterSaga, socket),
     fork(appMasterSaga, socket),
     fork(connectionMasterSaga),
     fork(errorsMasterSaga),

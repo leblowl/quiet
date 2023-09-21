@@ -34,6 +34,8 @@ import {
   SaveCertificatePayload,
   SocketActionTypes,
   UserData,
+  User,
+  UserProfile,
 } from '@quiet/types'
 import { isDefined } from '@quiet/common'
 import fs from 'fs'
@@ -46,6 +48,7 @@ import { LazyModuleLoader } from '@nestjs/core'
 import AccessControllers from 'orbit-db-access-controllers'
 import { MessagesAccessController } from './MessagesAccessController'
 import { createChannelAccessController } from './ChannelsAccessController'
+import { UserProfilesAccessController } from './UserProfilesAccessController'
 import Logger from '../common/logger'
 import { DirectMessagesRepo, PublicChannelsRepo } from '../common/types'
 import { removeFiles, removeDirs, createPaths, getUsersAddresses } from '../common/utils'
@@ -65,6 +68,7 @@ export class StorageService extends EventEmitter {
   private publicKeysMap: Map<string, CryptoKey> = new Map()
   private userNamesMap: Map<string, string> = new Map()
   private communityMetadata: KeyValueStore<CommunityMetadata>
+  public userProfiles: KeyValueStore<UserProfile>
   private ipfs: IPFS
   private orbitDb: OrbitDB
   private filesManager: IpfsFileManagerService
@@ -162,6 +166,9 @@ export class StorageService extends EventEmitter {
     if (this.communityMetadata?.address) {
       dbs.push(this.communityMetadata.address)
     }
+    if (this.userProfiles?.address) {
+      dbs.push(this.userProfiles.address)
+    }
 
     const channels = this.publicChannelsRepos.values()
 
@@ -201,6 +208,7 @@ export class StorageService extends EventEmitter {
     const channelsAccessController = createChannelAccessController(peerId, this.orbitDbDir)
     AccessControllers.addAccessController({ AccessController: MessagesAccessController })
     AccessControllers.addAccessController({ AccessController: channelsAccessController })
+    AccessControllers.addAccessController({ AccessController: UserProfilesAccessController })
     // @ts-ignore
     const orbitDb = await OrbitDB.createInstance(this.ipfs, {
       // @ts-ignore
@@ -215,15 +223,17 @@ export class StorageService extends EventEmitter {
   }
 
   public async initDatabases() {
-    this.logger('1/5')
+    this.logger('1/6')
     await this.createDbForChannels()
-    this.logger('2/5')
+    this.logger('2/6')
     await this.createDbForCertificates()
-    this.logger('3/5')
+    this.logger('3/6')
     await this.createDbForCertificatesRequests()
-    this.logger('4/5')
+    this.logger('4/6')
     await this.createDbForCommunityMetadata()
-    this.logger('5/5')
+    this.logger('5/6')
+    await this.createDbForUserProfiles()
+    this.logger('6/6')
     await this.initAllChannels()
     this.logger('Initialized DBs')
     this.emit(SocketActionTypes.CONNECTION_PROCESS_INFO, ConnectionProcessInfo.INITIALIZED_DBS)
@@ -298,7 +308,6 @@ export class StorageService extends EventEmitter {
     } catch (e) {
       this.logger.error('Error closing channels db', e)
     }
-
     try {
       await this.certificates?.close()
     } catch (e) {
@@ -313,6 +322,11 @@ export class StorageService extends EventEmitter {
       await this.communityMetadata?.close()
     } catch (e) {
       this.logger.error('Error closing community metadata db', e)
+    }
+    try {
+      await this.userProfiles?.close()
+    } catch (e) {
+      this.logger.error('Error closing user profiles db', e)
     }
     await this.__stopOrbitDb()
     await this.__stopIPFS()
@@ -743,6 +757,7 @@ export class StorageService extends EventEmitter {
           write: ['*'],
         },
       })
+
       repo = {
         db,
         eventsAttached: false,
@@ -1001,5 +1016,52 @@ export class StorageService extends EventEmitter {
     // @ts-ignore
     this.filesManager = null
     this.peerId = null
+  }
+
+  // User Profiles
+
+  public async createDbForUserProfiles() {
+    this.logger('createDbForUserProfiles init')
+    this.userProfiles = await this.orbitDb.keyvalue<UserProfile>('user-profiles', {
+      replicate: false,
+      accessController: {
+        type: 'userProfilesAccess',
+        write: ['*'],
+      },
+    })
+    this.userProfiles.events.on('write', async (_address, entry) => {
+      this.logger('Saved user profile locally')
+      this.emit(StorageEvents.LOADED_USER_PROFILES, {
+        profiles: [entry.payload.value],
+      })
+    })
+    this.userProfiles.events.on('ready', () => {
+      this.logger('Loaded user profile to memory')
+      this.emit(StorageEvents.LOADED_USER_PROFILES, {
+        profiles: this.getUserProfiles(this.userProfiles),
+      })
+    })
+    this.userProfiles.events.on('replicated', async () => {
+      this.logger('Replicated user profiles')
+      this.emit(StorageEvents.LOADED_USER_PROFILES, {
+        profiles: this.getUserProfiles(this.userProfiles),
+      })
+    })
+
+    // @ts-expect-error - OrbitDB's type declaration of `load` lacks 'options'
+    await this.userProfiles.load({ fetchEntryTimeout: 15000 })
+  }
+
+  public async addUserProfile(userProfile: UserProfile) {
+    this.logger('Adding user profile', userProfile)
+    try {
+      await this.userProfiles.put(userProfile.pubKey, userProfile)
+    } catch (err) {
+      this.logger('ERROR: Failed to add user profile', err)
+    }
+  }
+
+  protected getUserProfiles(db: KeyValueStore<UserProfile>): UserProfile[] {
+    return Object.values(db.all)
   }
 }

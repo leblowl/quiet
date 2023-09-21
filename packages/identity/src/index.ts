@@ -9,8 +9,8 @@ import {
   pubKeyFromCsr,
 } from './extractPubKey'
 import { verifyUserCert } from './verifyUserCertificate'
-import { verifySignature } from './verification'
-import { sign } from './sign'
+import { verifySignature, verifyDataSignature } from './verification'
+import { sign, signData } from './sign'
 import { createUserCsr, type UserCsr } from './requestCertificate'
 import { createUserCert, type UserCert } from './generateUserCertificate'
 import {
@@ -48,8 +48,8 @@ export {
   parseCertificationRequest,
 }
 export { verifyUserCert }
-export { verifySignature }
-export { sign }
+export { verifySignature, verifyDataSignature }
+export { sign, signData }
 export { createUserCsr, type UserCsr }
 export { createUserCert, type UserCert }
 export {

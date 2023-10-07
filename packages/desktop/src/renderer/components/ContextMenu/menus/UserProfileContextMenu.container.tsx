@@ -296,6 +296,14 @@ export const UserProfileContextMenuEditProfileView: FC<{ setRoute: (route: strin
       return
     }
 
+    // 200 KB = 204800 B limit
+    if (photo.size > 204800) {
+      const msg = 'Image size must be less than or equal to 200KB'
+      console.error(msg)
+      setError(msg)
+      return
+    }
+
     setError('')
     dispatch(users.actions.saveUserProfile({ photo }))
   }

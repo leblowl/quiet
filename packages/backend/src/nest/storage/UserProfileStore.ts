@@ -20,7 +20,7 @@ const logger = createLogger('UserProfileStore')
 /**
  * Check magic byte sequence to determine if buffer is a PNG image.
  */
-const isPng = (buffer: Uint8Array): boolean => {
+export const isPng = (buffer: Uint8Array): boolean => {
   // https://en.wikipedia.org/wiki/PNG
   const pngHeader = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
@@ -42,7 +42,7 @@ const isPng = (buffer: Uint8Array): boolean => {
  * https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readAsDataURL
  * and converts it to a Uint8Array.
  */
-const base64DataURLToByteArray = (contents: string): Uint8Array => {
+export const base64DataURLToByteArray = (contents: string): Uint8Array => {
   const [header, base64Data] = contents.split(',')
   if (!header.startsWith('data:') || !header.endsWith(';base64')) {
     throw new Error('Expected base64 data URI')

@@ -16,7 +16,6 @@ import createLogger from '../common/logger'
 
 const logger = createLogger('UserProfileStore')
 
-
 /**
  * Check magic byte sequence to determine if buffer is a PNG image.
  */
@@ -50,16 +49,19 @@ export const base64DataURLToByteArray = (contents: string): Uint8Array => {
   const chars = atob(base64Data)
   const bytes = new Array(chars.length)
   for (let i = 0; i < chars.length; i++) {
-      bytes[i] = chars.charCodeAt(i)
+    bytes[i] = chars.charCodeAt(i)
   }
   return new Uint8Array(bytes)
 }
 
 export class UserProfileStore {
-
   public orbitDb: OrbitDB
   public store: KeyValueStore<UserProfile>
 
+  // Copying OrbitDB by using dag-cbor/sha256 for converting the
+  // profile to a byte array for signing:
+  // https://github.com/orbitdb/orbitdb/blob/3eee148510110a7b698036488c70c5c78f868cd9/src/oplog/entry.js#L75-L76
+  // I think any encoding would work here.
   public static readonly codec = dagCbor
   public static readonly hasher = sha256
 
@@ -138,7 +140,11 @@ export class UserProfileStore {
       const profile = userProfile.profile
       const pubKey = await keyObjectFromString(userProfile.pubKey, crypto)
       const profileSig = stringToArrayBuffer(userProfile.profileSig)
-      const { bytes } = await Block.encode({ value: profile, codec: UserProfileStore.codec, hasher: UserProfileStore.hasher })
+      const { bytes } = await Block.encode({
+        value: profile,
+        codec: UserProfileStore.codec,
+        hasher: UserProfileStore.hasher,
+      })
       const verify = await verifyDataSignature(profileSig, bytes, pubKey)
 
       if (!verify) {
@@ -151,7 +157,7 @@ export class UserProfileStore {
       // accepts a variety of formats that we may want to limit. Some
       // interesting thoughts:
       // https://security.stackexchange.com/a/135636
-      let photoBytes = base64DataURLToByteArray(profile.photo)
+      const photoBytes = base64DataURLToByteArray(profile.photo)
       if (!isPng(photoBytes)) {
         logger.error('Expected PNG for user profile photo', userProfile.pubKey)
         return false
@@ -174,7 +180,6 @@ export class UserProfileStore {
   }
 
   public static async validateUserProfileEntry(entry: LogEntry<UserProfile>) {
-
     let verify = false
 
     try {

@@ -284,7 +284,7 @@
       "node_modules/(@react-dnd|react-dnd|react-dnd-html5-backend|dnd-core|)/.+\\.(j|t)sx?$": "ts-jest"
     },
     "transformIgnorePatterns": [
-      "<rootDir>/node_modules/(?!@react-dnd.*/|react-dnd./*|react-dnd-html5-backend/.*|dnd-core./*)"
+      "<rootDir>/node_modules/(?!@react-dnd.*/|react-dnd./*|react-dnd-html5-backend/.*|dnd-core./*|@ipld|cborg)"
     ],
     "moduleNameMapper": {
       "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/src/shared/testing/fileMock.ts",

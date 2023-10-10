@@ -9,7 +9,7 @@ import { identity, users } from '@quiet/state-manager'
 import { useContextMenu } from '../../../../hooks/useContextMenu'
 import { useModal } from '../../../containers/hooks'
 import { ContextMenu, ContextMenuItemList } from '../ContextMenu.component'
-import { ContextMenuItemProps } from '../ContextMenu.types'
+import { ContextMenuItemProps, ContextMenuProps } from '../ContextMenu.types'
 import { MenuName } from '../../../../const/MenuNames.enum'
 import { ModalName } from '../../../sagas/modals/modals.types'
 import Jdenticon from '../../Jdenticon/Jdenticon'
@@ -100,8 +100,8 @@ export const UserProfileContextMenu: FC = () => {
   const [route, setRoute] = useState('userProfile')
 
   const views: Map<string, JSX.Element> = new Map()
-  views.set('userProfile', <UserProfileContextMenuProfileView setRoute={setRoute} />)
-  views.set('userProfile/edit', <UserProfileContextMenuEditProfileView setRoute={setRoute} />)
+  views.set('userProfile', <UserProfileMenuProfileComponent setRoute={setRoute} />)
+  views.set('userProfile/edit', <UserProfileMenuEditComponent setRoute={setRoute} />)
   return views.get(route) || (views.get('userProfile') as JSX.Element)
 }
 
@@ -109,17 +109,40 @@ export const UserProfileContextMenu: FC = () => {
  * Context menu view that allows the user to view their user profile
  * and associated actions (e.g. edit profile)
  */
-export const UserProfileContextMenuProfileView: FC<{ setRoute: (route: string) => void }> = ({ setRoute }) => {
-  const dispatch = useDispatch()
+export const UserProfileMenuProfileComponent: FC<{ setRoute: (route: string) => void }> = ({ setRoute }) => {
   const currentIdentity = useSelector(identity.selectors.currentIdentity)
   const userProfile = useSelector(users.selectors.myUserProfile)
   const username = currentIdentity?.nickname || ''
   const contextMenu = useContextMenu(MenuName.UserProfile)
 
-  const [contentRef, setContentRef] = useState<HTMLDivElement | null>(null)
-  const scrollbarRef = useRef(null)
-  const [offset, setOffset] = useState(0)
+  return (
+    <UserProfileMenuProfileView
+      username={username}
+      userProfile={userProfile}
+      contextMenu={contextMenu}
+      setRoute={setRoute}
+    />
+  )
+}
 
+export interface UserProfileMenuProfileViewProps {
+  username: string
+  userProfile?: { profile: { photo: string } }
+  contextMenu: {
+    // FIXME: should be boolean; useContextMenu typing is broken
+    visible: unknown
+    handleOpen: (args?: object | undefined) => any
+    handleClose: () => any
+  }
+  setRoute: (route: string) => void
+}
+
+export const UserProfileMenuProfileView: FC<UserProfileMenuProfileViewProps> = ({
+  username,
+  userProfile,
+  contextMenu,
+  setRoute,
+}) => {
   const items: ContextMenuItemProps[] = [
     {
       title: 'Edit profile',
@@ -128,6 +151,10 @@ export const UserProfileContextMenuProfileView: FC<{ setRoute: (route: string) =
       },
     },
   ]
+
+  const [contentRef, setContentRef] = useState<HTMLDivElement | null>(null)
+  const scrollbarRef = useRef(null)
+  const [offset, setOffset] = useState(0)
 
   const adjustOffset = () => {
     if (!contentRef?.clientWidth) return
@@ -235,13 +262,48 @@ export const EditPhotoButton: FC<{ onChange: (photo?: File) => void }> = ({ onCh
 /**
  * Context menu view that allows the user to edit their user profile
  */
-export const UserProfileContextMenuEditProfileView: FC<{ setRoute: (route: string) => void }> = ({ setRoute }) => {
+export const UserProfileMenuEditComponent: FC<{ setRoute: (route: string) => void }> = ({ setRoute }) => {
   const dispatch = useDispatch()
   const currentIdentity = useSelector(identity.selectors.currentIdentity)
   const userProfile = useSelector(users.selectors.myUserProfile)
   const username = currentIdentity?.nickname || ''
-  const [error, setError] = useState<string>('')
   const contextMenu = useContextMenu(MenuName.UserProfile)
+  const onSaveUserProfile = ({ photo }: { photo: File }) => {
+    dispatch(users.actions.saveUserProfile({ photo }))
+  }
+
+  return (
+    <UserProfileMenuEditView
+      username={username}
+      userProfile={userProfile}
+      contextMenu={contextMenu}
+      setRoute={setRoute}
+      onSaveUserProfile={onSaveUserProfile}
+    />
+  )
+}
+
+export interface UserProfileMenuEditViewProps {
+  username: string
+  userProfile?: { profile: { photo: string } }
+  contextMenu: {
+    // FIXME: should be boolean; useContextMenu typing is broken
+    visible: unknown
+    handleOpen: (args?: object | undefined) => any
+    handleClose: () => any
+  }
+  setRoute: (route: string) => void
+  onSaveUserProfile: ({ photo }: { photo: File }) => void
+}
+
+export const UserProfileMenuEditView: FC<UserProfileMenuEditViewProps> = ({
+  username,
+  userProfile,
+  contextMenu,
+  setRoute,
+  onSaveUserProfile,
+}) => {
+  const [error, setError] = useState<string>('')
 
   const [contentRef, setContentRef] = useState<HTMLDivElement | null>(null)
   const scrollbarRef = useRef(null)
@@ -305,7 +367,7 @@ export const UserProfileContextMenuEditProfileView: FC<{ setRoute: (route: strin
     }
 
     setError('')
-    dispatch(users.actions.saveUserProfile({ photo }))
+    onSaveUserProfile({ photo })
   }
 
   React.useEffect(() => {
